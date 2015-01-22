@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<launch>
+
+  <!-- Start openni_launch - starts publishing RGB-D data from Kinect -->
+  <include file="$(find openni_launch)/launch/openni.launch">
+      <arg name="camera" value="left" />
+      <arg name="tf_prefix" value="left" />
+      <arg name="device_id" value="#1" />
+      
+  </include>
+
+  <!-- Start openni_launch - starts publishing RGB-D data from Kinect -->
+  <include file="$(find openni_launch)/launch/openni.launch">
+      <arg name="camera" value="right" />
+      <arg name="tf_prefix" value="right" />
+      <arg name="device_id" value="#2" />
+  </include>
+
+  <node name="calibrate" type="calibrate_cameras" pkg="object_detection" required="false" output="screen" />
+
+<!-- 
+  <node name="object_detection" type="colourFilter.py" pkg="object_detection" required="false" output="screen">
+    <rosparam command="load" file="$(find object_detection)/parameters/colourFilters.yaml"/> 
+  </node> -->
+
+  <node pkg="tf" type="static_transform_publisher" name="left_camera_tf" args="0 0 0 0 0 0 1 table left/left_link 100" />
+
+  <node pkg="tf" type="static_transform_publisher" name="right_camera_tf" args="1.5 0 0 0.9999888583325025 -0.0008750634663360341 -0.004093031612454202 0.002182788814252895 table right/right_link 100" />
+
+</launch>

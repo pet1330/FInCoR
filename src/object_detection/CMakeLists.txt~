@@ -1,0 +1,47 @@
+cmake_minimum_required(VERSION 2.8.3)
+project(object_detection)
+
+find_package(catkin REQUIRED COMPONENTS
+  cv_bridge
+  roscpp
+  rospy
+  sensor_msgs
+  std_msgs
+)
+
+find_package(PCL)
+
+
+
+
+
+
+
+
+catkin_package(
+)
+
+
+include_directories(
+  ${catkin_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
+  ${PCL_INCLUDE_DIRS}
+)
+
+
+add_executable(calibrate_cameras src/calibrate.cpp)
+
+
+
+
+
+
+
+
+
+
+
+
+find_package(PCL REQUIRED)
+include_directories(... ${PCL_INCLUDE_DIRS})
+target_link_libraries(calibrate_cameras ${PCL_LIBRARIES})
