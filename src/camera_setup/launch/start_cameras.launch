@@ -16,8 +16,10 @@
       
   </include>
 
-  <node pkg="tf" type="static_transform_publisher" name="left_camera_tf" args="0 0 0 0 0 0 1 table left/left_link 100" />
+  <!--
+  <node pkg="tf" type="static_transform_publisher" name="left_camera_tf" args="0.06763877 -0.09406748 0.73625455 -0.25156746  0.00844984  0.05274514  0.96636451  left/left_rgb_optical_frame table 100" />
+  
 
-  <node pkg="tf" type="static_transform_publisher" name="right_camera_tf" args="2 2 2 0 0 0 1 table right/right_link 100" />
-
+  <node pkg="tf" type="static_transform_publisher" name="right_camera_tf" args="1 1 1 0 0 0 1 table right/right_rgb_optical_frame 100" />
+-->
 </launch>
