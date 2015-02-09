@@ -22,6 +22,12 @@ class calibrate_camera:
         self.pattern_points[:,:2] = np.indices(self.pattern_size).T.reshape(-1, 2)
         self.pattern_points[:,0]=-self.pattern_points[:,0]
         self.pattern_points *= 0.05
+        self.count = [1,1]
+        self.left_midXYZ = [0,0,0]
+        self.left_midQ = [0,0,0,0]
+        self.right_midXYZ = [0,0,0]
+        self.right_midQ = [0,0,0,0]
+
         
     def find_tf(self, ros_image_msg, invert):
         try:
@@ -47,28 +53,56 @@ class calibrate_camera:
             rot_hom = np.eye(4)
             rot_hom[:3,:3]=Rt
             q = tf.transformations.quaternion_from_matrix(rot_hom)
-            
+#===================================================================================================
             if invert:
+                self.right_midXYZ = np.vstack((self.right_midXYZ,tVec.reshape(1,-1)[0]))
+                self.right_midQ = np.vstack((self.right_midQ,q))
+                self.count[1] += 1
+                if self.count[1]%1000 == 0:
+                    output_XYZ = np.median(self.right_midXYZ[1:], axis=0)
+                    median_Q = np.median(self.right_midQ[1:], axis=0)
+                    output_q = median_Q/np.sum(median_Q)
+                    self.count[1] = 1
+                    print "RIGHT"
+                    print "##########"
+                    print "Q:", output_q
+                    print "##########"
+                    print "XYZ:", output_XYZ
+                    print "##########"
+                else:
+                    pass #print self.count
+
                 self.br.sendTransform((tVec[0],tVec[1] , tVec[2]),q,rospy.Time.now(), "/marker_right", "/right/right_rgb_optical_frame")
                 try:
                     (transr,rotr) = self.listener.lookupTransform('/marker_right', '/right/right_link', rospy.Time(0))
                     self.br.sendTransform(transr,rotr,rospy.Time.now(), '/right/right_link', "/base")
-                    #print "no error right"
                 except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
                     pass
-                #with self.lock:
-                   # print "Righ", tVec.reshape(1,-1) , q
             else:
+#===================================================================================================
+                self.left_midXYZ = np.vstack((self.left_midXYZ,tVec.reshape(1,-1)[0]))
+                self.left_midQ = np.vstack((self.left_midQ,q))
+                self.count[0] += 1
+                if self.count[0]%1000 == 0:
+                    output_XYZ = np.median(self.left_midXYZ[1:], axis=0)
+                    median_Q = np.median(self.left_midQ[1:], axis=0)
+                    output_q = median_Q/np.sum(median_Q)
+                    self.count[0] = 1
+                    print "LEFT"
+                    print "##########"
+                    print "Q:", output_q
+                    print "##########"
+                    print "XYZ:", output_XYZ
+                    print "##########"
+                else:
+                    pass #print self.count
+
                 self.br.sendTransform((tVec[0],tVec[1] , tVec[2]),q,rospy.Time.now(), "/marker_left", "/left/left_rgb_optical_frame")
                 try:
                     (transl,rotl) = self.listener.lookupTransform('/marker_left', '/left/left_link', rospy.Time(0))
                     self.br.sendTransform(transl,rotl,rospy.Time.now(), '/left/left_link', "/base")
-                    #print "no error left"
                 except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
                     pass
-                #with self.lock:
-                   # print "Left", tVec.reshape(1,-1) , q
-
 
     def left_callback(self,left):
         self.find_tf(left,invert = False)
@@ -78,6 +112,7 @@ class calibrate_camera:
 
 def main():
     rospy.init_node('calibrate_camera', anonymous=True)
+    
     calibrate_camera()
     rospy.spin()
 
