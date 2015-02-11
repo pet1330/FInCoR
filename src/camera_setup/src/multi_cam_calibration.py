@@ -5,7 +5,6 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 import numpy as np
 import tf
-import threading
 
 class calibrate_camera:
 
@@ -15,7 +14,7 @@ class calibrate_camera:
         self.right_image = rospy.Subscriber('/right/rgb/image_color', Image, self.right_callback)
         self.br = tf.TransformBroadcaster()
         self.listener = tf.TransformListener()
-        self.lock = threading.Lock()
+        self.no_frames = 1000;
 
         self.pattern_size = (6, 8)
         self.pattern_points = np.zeros( (np.prod(self.pattern_size), 3), np.float32)
@@ -23,11 +22,16 @@ class calibrate_camera:
         self.pattern_points[:,0]=-self.pattern_points[:,0]
         self.pattern_points *= 0.05
         self.count = [1,1]
+        
         self.left_midXYZ = [0,0,0]
         self.left_midQ = [0,0,0,0]
         self.right_midXYZ = [0,0,0]
         self.right_midQ = [0,0,0,0]
-
+        self.final_left_xyz = [-1, -1, -1]
+        self.final_left_q = [-1, -1, -1, -1]
+        self.final_right_xyz = [-1, -1, -1]
+        self.final_right_q = [-1, -1, -1, -1]
+        self.still_calibrating = True
         
     def find_tf(self, ros_image_msg, invert):
         try:
@@ -53,66 +57,63 @@ class calibrate_camera:
             rot_hom = np.eye(4)
             rot_hom[:3,:3]=Rt
             q = tf.transformations.quaternion_from_matrix(rot_hom)
-#===================================================================================================
+            
             if invert:
                 self.right_midXYZ = np.vstack((self.right_midXYZ,tVec.reshape(1,-1)[0]))
                 self.right_midQ = np.vstack((self.right_midQ,q))
                 self.count[1] += 1
-                if self.count[1]%1000 == 0:
-                    output_XYZ = np.median(self.right_midXYZ[1:], axis=0)
+                if self.count[1] == self.no_frames:
+                    self.final_right_xyz = np.median(self.right_midXYZ[1:], axis=0)
                     median_Q = np.median(self.right_midQ[1:], axis=0)
-                    output_q = median_Q/np.sum(median_Q)
-                    self.count[1] = 1
-                    print "RIGHT"
-                    print "##########"
-                    print "Q:", output_q
-                    print "##########"
-                    print "XYZ:", output_XYZ
-                    print "##########"
-                else:
-                    pass #print self.count
-
-                self.br.sendTransform((tVec[0],tVec[1] , tVec[2]),q,rospy.Time.now(), "/marker_right", "/right/right_rgb_optical_frame")
-                try:
-                    (transr,rotr) = self.listener.lookupTransform('/marker_right', '/right/right_link', rospy.Time(0))
-                    self.br.sendTransform(transr,rotr,rospy.Time.now(), '/right/right_link', "/base")
-                except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-                    pass
+                    self.final_right_q = median_Q/np.sum(median_Q)
             else:
-#===================================================================================================
                 self.left_midXYZ = np.vstack((self.left_midXYZ,tVec.reshape(1,-1)[0]))
                 self.left_midQ = np.vstack((self.left_midQ,q))
                 self.count[0] += 1
-                if self.count[0]%1000 == 0:
-                    output_XYZ = np.median(self.left_midXYZ[1:], axis=0)
+                print self.count
+                if self.count[0] == self.no_frames:
+                    self.final_left_xyz = np.median(self.left_midXYZ[1:], axis=0)
                     median_Q = np.median(self.left_midQ[1:], axis=0)
-                    output_q = median_Q/np.sum(median_Q)
-                    self.count[0] = 1
-                    print "LEFT"
-                    print "##########"
-                    print "Q:", output_q
-                    print "##########"
-                    print "XYZ:", output_XYZ
-                    print "##########"
-                else:
-                    pass #print self.count
+                    self.final_left_q = median_Q/np.sum(median_Q)
+            
+            if self.count[0] > self.no_frames and self.count[1] > self.no_frames:
+                self.still_calibrating = False
+                print "Calibration Complete"
+                print "Starting Static Transform Broadcaster"
 
-                self.br.sendTransform((tVec[0],tVec[1] , tVec[2]),q,rospy.Time.now(), "/marker_left", "/left/left_rgb_optical_frame")
-                try:
-                    (transl,rotl) = self.listener.lookupTransform('/marker_left', '/left/left_link', rospy.Time(0))
-                    self.br.sendTransform(transl,rotl,rospy.Time.now(), '/left/left_link', "/base")
-                except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-                    pass
+    def left_publish(self):
+        self.br.sendTransform((self.final_left_xyz[0],self.final_left_xyz[1],self.final_left_xyz[2]),self.final_left_q,rospy.Time.now(), "/marker_left", "/left/left_rgb_optical_frame")
+        try:
+            (transl,rotl) = self.listener.lookupTransform('/marker_left', '/left/left_link', rospy.Time(0))
+            self.br.sendTransform(transl,rotl,rospy.Time.now(), '/left/left_link', "/base")
+        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+            pass
+    
+    def right_publish(self):
+        self.br.sendTransform((self.final_right_xyz[0],self.final_right_xyz[1],self.final_right_xyz[2]),self.final_right_q,rospy.Time.now(), "/marker_right", "/right/right_rgb_optical_frame")
+        try:
+            (transr,rotr) = self.listener.lookupTransform('/marker_right', '/right/right_link', rospy.Time(0))
+            self.br.sendTransform(transr,rotr,rospy.Time.now(), '/right/right_link', "/base")
+        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+            pass
 
     def left_callback(self,left):
-        self.find_tf(left,invert = False)
+
+        if self.still_calibrating:
+            self.find_tf(left,invert = False)
+        else:
+            self.left_publish()
+        
 
     def right_callback(self,right):
-        self.find_tf(right,invert = True)
+        if self.still_calibrating:
+            self.find_tf(right,invert = True)
+        else:
+            self.right_publish()
+
 
 def main():
-    rospy.init_node('calibrate_camera', anonymous=True)
-    
+    rospy.init_node('calibrate_camera')
     calibrate_camera()
     rospy.spin()
 
