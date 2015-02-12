@@ -5,6 +5,8 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 import numpy as np
 import tf
+import sys
+import math
 
 class calibrate_camera:
 
@@ -62,6 +64,7 @@ class calibrate_camera:
                 self.right_midXYZ = np.vstack((self.right_midXYZ,tVec.reshape(1,-1)[0]))
                 self.right_midQ = np.vstack((self.right_midQ,q))
                 self.count[1] += 1
+                self.update_progress()
                 if self.count[1] == self.no_frames:
                     self.final_right_xyz = np.median(self.right_midXYZ[1:], axis=0)
                     median_Q = np.median(self.right_midQ[1:], axis=0)
@@ -70,16 +73,35 @@ class calibrate_camera:
                 self.left_midXYZ = np.vstack((self.left_midXYZ,tVec.reshape(1,-1)[0]))
                 self.left_midQ = np.vstack((self.left_midQ,q))
                 self.count[0] += 1
-                print self.count
+                #print self.count
+                self.update_progress()
                 if self.count[0] == self.no_frames:
                     self.final_left_xyz = np.median(self.left_midXYZ[1:], axis=0)
                     median_Q = np.median(self.left_midQ[1:], axis=0)
                     self.final_left_q = median_Q/np.sum(median_Q)
             
-            if self.count[0] > self.no_frames and self.count[1] > self.no_frames:
+            if self.count[0] > self.no_frames and self.count[1] > self.no_frames and self.still_calibrating:
                 self.still_calibrating = False
-                print "Calibration Complete"
-                print "Starting Static Transform Broadcaster"
+                print "Successfully Calibrated over %d frames, " % self.no_frames
+                print "Starting Static Transform Broadcaster on:"
+                print "+" + "-"*5 + "+" + "-"*12  + "+" + "-"*12  + "+"
+                print "|     | %-10s | %-10s |" % ("  Left:  ", "  Right:  ")
+                print "+" + "-"*5 + "+" + "-"*12  + "+" + "-"*12  + "+"
+                print "| %-3s | %-10f | %-10f |" % ("X:", self.final_left_xyz[0], self.final_right_xyz[0])
+                print "| %-3s | %-10f | %-10f |" % ("Y:", self.final_left_xyz[1], self.final_right_xyz[1])
+                print "| %-3s | %-10f | %-10f |" % ("Z:", self.final_left_xyz[2], self.final_right_xyz[2])
+                for index in range(len(self.final_left_q)):
+                    print "| %-3s | %-10f | %-10f |" % ("Q" + str(index+1) + ":", self.final_left_q[index], self.final_right_q[index])
+                print "+" + "-"*5 + "+" + "-"*12  + "+" + "-"*12  + "+"
+    def update_progress(self):
+        progress = (float(min(self.count)))
+        percent = (progress/self.no_frames)
+        if percent <= 1.0:
+            sys.stdout.write('\r')
+            sys.stdout.write("[%-70s] %.1f%%" % ('#'*int(percent*70), percent*100.00))
+            sys.stdout.flush()
+        else:
+            print ""
 
     def left_publish(self):
         self.br.sendTransform((self.final_left_xyz[0],self.final_left_xyz[1],self.final_left_xyz[2]),self.final_left_q,rospy.Time.now(), "/marker_left", "/left/left_rgb_optical_frame")

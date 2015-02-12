@@ -2,10 +2,11 @@
 <launch>
 
   <!-- Start openni_launch - starts publishing RGB-D data from Kinect -->
-  <include file="$(find openni_launch)/launch/openni.launch">
+  <include file="$(find openni_launch)/launch/openni.launch" output="log">
       <arg name="camera" value="right" />
       <arg name="tf_prefix" value="right" />
       <arg name="device_id" value="#1" />
+
   </include>
 
   <!-- Start openni_launch - starts publishing RGB-D data from Kinect -->
@@ -17,32 +18,5 @@
   </include>
   
 <node name="camera_calibration" pkg="camera_setup" type="multi_cam_calibration.py" required="true" output="screen" />
-<node name="rviz" pkg="rviz" type="rviz" />
-
-<!--
-
-  <node pkg="tf" type="static_transform_publisher" name="left_camera_tf" args="-0.19883097 -0.25425327  1.22539408 -0.82628724  3.65133707 -1.52606893 -0.2989809 left/left_rgb_optical_frame table 100" />
-  
-
-  <node pkg="tf" type="static_transform_publisher" name="right_camera_tf" args=" 0.15289404  0.02518542  1.01957626 0.79738076 -0.21637225  0.09723616  0.32175534 table right/right_rgb_optical_frame 100" />
-
-<node pkg="tf" type="static_transform_publisher" name="right_camera_tf" args=" 0.15289404  0.02518542  1.01957626 0.79738076 -0.21637225  0.09723616  0.32175534 table right/right_rgb_optical_frame 100" />
-
-<node pkg="tf" type="static_transform_publisher" name="right_camera_tf" args=" 0.15289404  0.02518542  1.01957626 0.79738076 -0.21637225  0.09723616  0.32175534 table right/right_rgb_optical_frame 100" />
-
-
-
-Transform : 								'/marker_left', '/left/left_rgb_optical_frame'
-lookup: 								    '/marker_left', '/left/left_link'
-translation of which is transformed into:   '/left/left_link', '/base')
-
-
-self.br.sendTransform((tVec[0],tVec[1] , tVec[2]),q,rospy.Time.now(), "/marker_left", "/left/left_rgb_optical_frame")
-                try:
-                    (transl,rotl) = self.listener.lookupTransform('/marker_left', '/left/left_link', rospy.Time(0))
-                    self.br.sendTransform(transl,rotl,rospy.Time.now(), '/left/left_link', "/base")
-                except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-                    pass
--->
 
 </launch>
