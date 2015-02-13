@@ -48,75 +48,39 @@ include_directories(
 
 # Libraries
 add_library(CCircleDetect src/scitos_docking/CCircleDetect.cpp)
-add_library(CLightClient src/scitos_docking/CLightClient.cpp)
-add_library(CHead src/scitos_docking/CHead.cpp)
-add_library(CDump src/scitos_docking/CDump.cpp)
-add_library(CTimer src/scitos_docking/CTimer.cpp)
 add_library(CRawImage src/scitos_docking/CRawImage.cpp)
 add_library(CTransformation src/scitos_docking/CTransformation.cpp)
-add_library(CChargingClient src/scitos_docking/CChargingClient.cpp)
-add_library(CPtuClient src/scitos_docking/CPtuClient.cpp)
-add_library(CChargingActions src/scitos_docking/CChargingActions.cpp)
 
 add_dependencies(CTransformation ${PROJECT_NAME}_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
-add_dependencies(CChargingClient ${PROJECT_NAME}_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
-add_dependencies(CPtuClient ${PROJECT_NAME}_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
+#add_dependencies(CChargingClient ${PROJECT_NAME}_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
+#add_dependencies(CPtuClient ${PROJECT_NAME}_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
 
 target_link_libraries(CTransformation ${GSL_LIBRARIES} ${catkin_LIBRARIES})
-target_link_libraries(CChargingClient ${catkin_LIBRARIES})
-target_link_libraries(CChargingActions ${catkin_LIBRARIES} CTimer CLightClient CHead)
-target_link_libraries(CLightClient ${catkin_LIBRARIES})
-target_link_libraries(CHead ${catkin_LIBRARIES})
-target_link_libraries(CPtuClient ${catkin_LIBRARIES})
 
 # Executables
 add_executable(visual_charging src/scitos_docking/docking.cpp)
-add_executable(visual_charging_client src/scitos_docking/dockingClient.cpp)
-add_executable(simple_move_client src/scitos_docking/testMoveClient.cpp)
-add_executable(simple_ptu_client src/scitos_docking/testPtuClient.cpp)
 
-add_dependencies(visual_charging_client ${PROJECT_NAME}_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
 add_dependencies(visual_charging ${PROJECT_NAME}_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
-add_dependencies(simple_move_client ${PROJECT_NAME}_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
-add_dependencies(simple_ptu_client ${PROJECT_NAME}_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
 
 target_link_libraries (visual_charging 
-    CDump 
-    CLightClient 
-    CHead 
-    CTimer 
     CCircleDetect
     CRawImage
     CTransformation
-    CChargingClient
-    CChargingActions
-    gsl
-    blas
     ${catkin_LIBRARIES}
     )
-target_link_libraries (visual_charging_client  ${catkin_LIBRARIES})
-target_link_libraries (simple_move_client  ${catkin_LIBRARIES})
-target_link_libraries (simple_ptu_client  ${catkin_LIBRARIES})
+#target_link_libraries (visual_charging_client  ${catkin_LIBRARIES})
+#target_link_libraries (simple_move_client  ${catkin_LIBRARIES})
+#target_link_libraries (simple_ptu_client  ${catkin_LIBRARIES})
 
 #############
 ## Install ##
 #############
 
 install(TARGETS 
-        CCircleDetect 
-        CLightClient 
-        CHead 
-        CDump 
-        CTimer 
-        CRawImage 
-        CTransformation 
-        CChargingClient 
-        CPtuClient 
-        CChargingActions 
-        visual_charging 
-        visual_charging_client 
-        simple_move_client 
-        simple_ptu_client
+    CCircleDetect 
+    CRawImage 
+    CTransformation 
+    visual_charging 
     ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
     LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
     RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
