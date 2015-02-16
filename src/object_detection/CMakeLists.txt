@@ -5,11 +5,11 @@ find_package(PCL REQUIRED)
 catkin_package()
 include_directories(${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS})
 
-add_executable(calibrate_object src/calibrate.cpp)
-target_link_libraries(calibrate_object ${catkin_LIBRARIES} ${PCL_LIBRARIES}) 
+#add_executable(calibrate_object src/calibrate.cpp)
+#target_link_libraries(calibrate_object ${catkin_LIBRARIES} ${PCL_LIBRARIES}) 
 
-add_executable(cal src/cal.cpp)
-target_link_libraries(cal ${catkin_LIBRARIES} ${PCL_LIBRARIES}) 
+#add_executable(cal src/cal.cpp)
+#target_link_libraries(cal ${catkin_LIBRARIES} ${PCL_LIBRARIES}) 
 
 
 
