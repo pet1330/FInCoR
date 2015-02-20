@@ -1,5 +1,5 @@
-#include "scitos_docking/CCircleDetect.h"
-#include "scitos_docking/CTransformation.h"
+#include "CCircleDetect.h"
+#include "CTransformation.h"
 #include "ros/ros.h"
 #include <image_transport/image_transport.h>
 #include <sensor_msgs/image_encodings.h>

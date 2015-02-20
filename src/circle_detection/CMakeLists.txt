@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(scitos_docking)
+project(circle_detection)
 
 find_package(catkin REQUIRED COMPONENTS 
     dynamic_reconfigure
@@ -17,15 +17,15 @@ pkg_check_modules(GSL REQUIRED gsl)
 include_directories(${GSL_INCLUDE_DIRS})
 link_directories(${GSL_LIBRARY_DIRS})
 
-add_service_files(
-   FILES
-   Charging.srv
-)
+#add_service_files(
+#   FILES
+#   Charging.srv
+#)
 
-add_action_files(
-   DIRECTORY action 
-   FILES Charging.action
-)
+#add_action_files(
+#   DIRECTORY action 
+   #FILES Charging.action
+#)
 
 generate_messages(
   DEPENDENCIES
@@ -47,28 +47,28 @@ include_directories(
 )
 
 # Libraries
-add_library(CCircleDetect src/scitos_docking/CCircleDetect.cpp)
-add_library(CRawImage src/scitos_docking/CRawImage.cpp)
-add_library(CTransformation src/scitos_docking/CTransformation.cpp)
+add_library(CCircleDetect src/CCircleDetect.cpp)
+add_library(CRawImage src/CRawImage.cpp)
+add_library(CTransformation src/CTransformation.cpp)
 
 add_dependencies(CTransformation ${PROJECT_NAME}_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
 #add_dependencies(CChargingClient ${PROJECT_NAME}_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
 #add_dependencies(CPtuClient ${PROJECT_NAME}_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
 
 target_link_libraries(CTransformation ${GSL_LIBRARIES} ${catkin_LIBRARIES})
-
+ 
 # Executables
-add_executable(visual_charging src/scitos_docking/docking.cpp)
+add_executable(circle_finder src/FindCircle.cpp)
 
-add_dependencies(visual_charging ${PROJECT_NAME}_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
+add_dependencies(circle_finder ${PROJECT_NAME}_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
 
-target_link_libraries (visual_charging 
+target_link_libraries (circle_finder 
     CCircleDetect
     CRawImage
     CTransformation
     ${catkin_LIBRARIES}
     )
-#target_link_libraries (visual_charging_client  ${catkin_LIBRARIES})
+#target_link_libraries (circle_finder_client  ${catkin_LIBRARIES})
 #target_link_libraries (simple_move_client  ${catkin_LIBRARIES})
 #target_link_libraries (simple_ptu_client  ${catkin_LIBRARIES})
 
@@ -80,13 +80,13 @@ install(TARGETS
     CCircleDetect 
     CRawImage 
     CTransformation 
-    visual_charging 
+    circle_finder 
     ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
     LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
     RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
     )
 
- install(DIRECTORY include/${PROJECT_NAME}/
+ install(DIRECTORY include/
     DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
     FILES_MATCHING PATTERN "*.h"
     PATTERN ".svn" EXCLUDE
