@@ -41,7 +41,7 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg) {
         objectArray[i].valid = false;
         if (currentSegmentArray[i].valid) {
             objectArray[i] = trans->transform(currentSegmentArray[i]);
-                printf("Image Points:  X:%f  Y:%f Z: %f\n", objectArray[i].x, objectArray[i].y, objectArray[i].z);
+            printf("Image Points:  X:%f  Y:%f Z: %f\n", objectArray[i].x, objectArray[i].y, objectArray[i].z);
         }
     }
     //and publish the result
