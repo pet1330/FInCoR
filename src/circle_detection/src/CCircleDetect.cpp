@@ -22,7 +22,7 @@ CCircleDetect::CCircleDetect(int wi, int he) {
     centerDistanceToleranceRatio = 0.1;
     centerDistanceToleranceAbs = 5;
     circularTolerance = 0.3;
-    ratioTolerance = 1.4;
+    ratioTolerance = 1.4
     threshold = maxThreshold / 2;
     numFailed = maxFailed;
     track = true;
@@ -243,7 +243,6 @@ SSegment CCircleDetect::findSegment(CRawImage* image, SSegment init) {
                 if (buffer[pos] == -1 && numSegments < MAX_SEGMENTS) {
                     if (examineSegment(image, &segmentArray[numSegments], pos, innerAreaRatio)) {
                         //the inside area is a circle. now what is the area ratio of the black and white ? also, are the circles concentric ?
-
                         if (debug) printf("Area ratio %i/%i is %.3f %.3f %.3f\n", numSegments - 2, numSegments - 1, (float) segmentArray[numSegments - 2].size / segmentArray[numSegments - 1].size, areasRatio, segmentArray[numSegments - 2].size / areasRatio / segmentArray[numSegments - 1].size);
                         if (
                                 ((float) segmentArray[numSegments - 2].size / areasRatio / (float) segmentArray[numSegments - 1].size - ratioTolerance < 1.0 && (float) segmentArray[numSegments - 2].size / areasRatio / (float) segmentArray[numSegments - 1].size + ratioTolerance > 1.0) &&
@@ -365,6 +364,7 @@ SSegment CCircleDetect::findSegment(CRawImage* image, SSegment init) {
                                 segmentArray[numSegments - 1].angle = atan2(sy - segmentArray[numSegments - 2].y, sx - segmentArray[numSegments - 2].x);
                                 segmentArray[numSegments - 2].x = sx;
                                 segmentArray[numSegments - 2].y = sy;
+                                segmentArray[numSegments - 2].bwRatio = ratio;
                             }
                         }
                     }

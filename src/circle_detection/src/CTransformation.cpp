@@ -610,6 +610,7 @@ STrackedObject CTransformation::transform(SSegment segment) {
     //Transform to the Canonical camera coordinates
     x = segment.x;
     y = segment.y;
+
     sem_wait(&trfparamsem);
     transformXY(&x, &y);
     //major axis
@@ -639,8 +640,6 @@ STrackedObject CTransformation::transform(SSegment segment) {
     sem_post(&trfparamsem);
     //minor axis length 
     minor = sqrt((x1 - x2)*(x1 - x2)+(y1 - y2)*(y1 - y2)) / 2.0;
-    //printf("BBB: %f %f\n",sqrt((x-x1)*(x-x1)+(y-y1)*(y-y1))-sqrt((x-x2)*(x-x2)+(y-y2)*(y-y2)),minor);
-
     //Construct the ellipse characteristic equation
     float a, b, c, d, e, f;
     a = v0 * v0 / (major * major) + v1 * v1 / (minor * minor);
@@ -652,7 +651,8 @@ STrackedObject CTransformation::transform(SSegment segment) {
 
     double data[] = {a, b, d, b, c, e, d, e, f};
     result = eigen(data);
-    result.valid = boost::math::isnormal(result.x) && boost::math::isnormal(result.y) && boost::math::isnormal(result.z);
+    result.bwratio = segment.bwRatio;
+    result.valid = boost::math::isnormal(result.x) && boost::math::isnormal(result.y) && boost::math::isnormal(result.z) && boost::math::isnormal(result.bwratio);
     return result;
 }
 

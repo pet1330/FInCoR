@@ -11,7 +11,8 @@ bool calibrated = true;
 
 int defaultImageWidth = 640;
 int defaultImageHeight = 480;
-float circleDiameter = 0.037;
+//float circleDiameter = 0.037;
+float circleDiameter = 0.0475;
 float rotateBy = 0;
 
 ros::NodeHandle *nh;
@@ -41,9 +42,10 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg) {
         objectArray[i].valid = false;
         if (currentSegmentArray[i].valid) {
             objectArray[i] = trans->transform(currentSegmentArray[i]);
-            printf("Image Points:  X:%f  Y:%f Z: %f\n", objectArray[i].x, objectArray[i].y, objectArray[i].z);
+            printf("Image Points:  X:%f  Y:%f Z: %f ratio: %f\n", objectArray[i].x, objectArray[i].y, objectArray[i].z, objectArray[i].bwratio);
         }
     }
+    printf("%s\n", "--------------------");
     //and publish the result
     memcpy((void*) &msg->data[0], image->data, msg->step * msg->height);
     imdebug.publish(msg);
