@@ -3,11 +3,12 @@
 #include "ros/ros.h"
 #include <image_transport/image_transport.h>
 #include <sensor_msgs/image_encodings.h>
-#include <string>
+#include <geometry_msgs/Pose.h>
+#include <tf/LinearMath/QuadWord.h>
+#include <cmath>
+
 
 #define MAX_PATTERNS 15
-
-bool calibrated = true;
 
 int defaultImageWidth = 640;
 int defaultImageHeight = 480;
@@ -33,6 +34,7 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg) {
         ROS_DEBUG("Readjusting image format from %ix%i %ibpp, to %ix%i %ibpp.", image->width, image->height, image->bpp, msg->width, msg->height, msg->step / msg->width);
         image = new CRawImage(msg->width, msg->height, msg->step / msg->width);
     }
+
     memcpy(image->data, (void*) &msg->data[0], msg->step * msg->height);
 
     //search image for circles
@@ -61,25 +63,28 @@ void depthCallback(const sensor_msgs::ImageConstPtr& msg) {
 
 int main(int argc, char* argv[]) {
 
+    ros::init(argc, argv, "circle_detector", ros::init_options::AnonymousName);
+    nh = new ros::NodeHandle("~");
     std::string topic;
 
-    if (argc != 2) {
-        std::cout << argc << std::endl;
-        std::cerr << "Please supply whether you are subscribing to the left or right camera (R/L)" << std::endl;
-        return -1;
+    if (nh->getParam("camera", topic)) {
+        std::transform(topic.begin(), topic.end(), topic.begin(), ::tolower);
     } else {
-        if (argv[1][0] == 'l' || argv[1][0] == 'L') {
-            topic = "left";
-        } else if (argv[1][0] == 'r' || argv[1][0] == 'R') {
-            topic = "right";
-        } else {
+        if (argc != 2) {
             std::cerr << "Please supply whether you are subscribing to the left or right camera (R/L)" << std::endl;
             return -1;
+        } else {
+            if (argv[1][0] == 'l' || argv[1][0] == 'L') {
+                topic = "left";
+            } else if (argv[1][0] == 'r' || argv[1][0] == 'R') {
+                topic = "right";
+            } else {
+                std::cerr << "Please supply whether you are subscribing to the left or right camera (R/L)" << std::endl;
+                return -1;
+            }
         }
     }
 
-    ros::init(argc, argv, "circle_detector");
-    nh = new ros::NodeHandle;
     image_transport::ImageTransport it(*nh);
     ros::Subscriber subcamera = nh->subscribe("/" + topic + "/rgb/camera_info", 1, cameraInfoCallBack);
     image = new CRawImage(defaultImageWidth, defaultImageHeight, 4);
@@ -89,7 +94,38 @@ int main(int argc, char* argv[]) {
     }
 
     image->getSaveNumber();
-    calibrated = trans->loadCalibration();
+
+    //==========================================================================
+    /*
+      geometry_msgs::Pose start_pose;
+
+      start_pose.position.x = 0.0;
+      start_pose.position.y = 0.0;
+      start_pose.position.z = 0.0;
+    
+      float x = 0.0;
+      float x = 0.0;
+      float x = 0.0;
+    
+      start_pose.orientation.w = (float) cos(0 / 2.0f);
+    
+    
+    
+    
+    
+    
+      tf::Transform transform;
+    transform.setOrigin( tf::Vector3(1.0, 1.0, 0.0) );
+    tf::Quaternion q;
+    q.setRPY(2.3, 2.0, 3);
+    
+      start_pose.orientation.x = q.getX();
+      start_pose.orientation.y = q.getY();
+      start_pose.orientation.z = q.getZ();
+      start_pose.orientation.w = q.getW();
+     */
+    //==========================================================================
+
     image_transport::Subscriber subim = it.subscribe("/" + topic + "/rgb/image_mono", 1, imageCallback);
     imdebug = it.advertise("/circledetection/" + topic + "/rgb/processedimage", 1);
     ROS_DEBUG("Server running");

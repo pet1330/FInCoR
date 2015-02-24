@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<launch>
+
+<node name="LeftCircleFinder" pkg="circle_detection" type="circle_finder" required="false" output="screen" clear_params="true">
+	<param name="camera" type="str" value="Left" />
+</node>
+
+<node name="RightCircleFinder" pkg="circle_detection" type="circle_finder" required="false" output="screen" clear_params="true">
+	<param name="camera" type="str" value="Right" />
+</node>
+
+<node name="view_left" pkg="image_view" type="image_view" required="false">
+	<param name="Image" type="str" value="/circledetection/left/rgb/processedimage" />
+</node>
+
+<node name="view_right" pkg="image_view" type="image_view" required="false">
+	<param name="Image" type="str" value="/circledetection/right/rgb/processedimage" />
+</node>
+
+</launch>
+
