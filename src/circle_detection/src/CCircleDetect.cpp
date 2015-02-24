@@ -22,7 +22,7 @@ CCircleDetect::CCircleDetect(int wi, int he) {
     centerDistanceToleranceRatio = 0.1;
     centerDistanceToleranceAbs = 5;
     circularTolerance = 0.3;
-    ratioTolerance = 1.4
+    ratioTolerance = 1.4;
     threshold = maxThreshold / 2;
     numFailed = maxFailed;
     track = true;

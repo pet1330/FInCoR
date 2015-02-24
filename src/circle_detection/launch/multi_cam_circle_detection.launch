@@ -10,11 +10,12 @@
 </node>
 
 <node name="view_left" pkg="image_view" type="image_view" required="false">
-	<param name="Image" type="str" value="/circledetection/left/rgb/processedimage" />
+	<remap from="image" to="/circledetection/left/rgb/processedimage"/>
 </node>
 
 <node name="view_right" pkg="image_view" type="image_view" required="false">
-	<param name="Image" type="str" value="/circledetection/right/rgb/processedimage" />
+	<remap from="image" to="/circledetection/right/rgb/processedimage"/>
+
 </node>
 
 </launch>
