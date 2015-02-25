@@ -5,7 +5,11 @@
 #include <sensor_msgs/image_encodings.h>
 #include <geometry_msgs/Pose.h>
 #include <tf/LinearMath/QuadWord.h>
+#include <tf/tf.h>
 #include <cmath>
+#include <geometry_msgs/PointStamped.h>
+#include <geometry_msgs/PoseStamped.h>
+#include <visualization_msgs/Marker.h>
 
 
 #define MAX_PATTERNS 15
@@ -19,6 +23,9 @@ float rotateBy = 0;
 ros::NodeHandle *nh;
 image_transport::Publisher imdebug;
 
+ros::Publisher pubPose;
+ros::Publisher vis_pub;
+
 CRawImage *image;
 
 CCircleDetect *detectorArray[MAX_PATTERNS];
@@ -27,6 +34,31 @@ STrackedObject objectArray3D[MAX_PATTERNS];
 SSegment currentSegmentArray[MAX_PATTERNS];
 SSegment lastSegmentArray[MAX_PATTERNS];
 CTransformation *trans;
+
+void publishRVizMarker(const geometry_msgs::PoseStamped cp) {
+    visualization_msgs::Marker marker;
+    marker.header.frame_id = "base";
+    marker.header.stamp = cp.header.stamp;
+    //marker.ns = "my_namespace";
+    marker.id = 0;
+    marker.type = visualization_msgs::Marker::SPHERE;
+    marker.action = visualization_msgs::Marker::ADD;
+    marker.pose.position.x = cp.pose.position.x;
+    marker.pose.position.y = cp.pose.position.y;
+    marker.pose.position.z = cp.pose.position.z;
+    marker.pose.orientation.x = cp.pose.orientation.x;
+    marker.pose.orientation.y = cp.pose.orientation.y;
+    marker.pose.orientation.z = cp.pose.orientation.z;
+    marker.pose.orientation.w = cp.pose.orientation.w;
+    marker.scale.x = 1;
+    marker.scale.y = 0.1;
+    marker.scale.z = 0.1;
+    marker.color.a = 1.0;
+    marker.color.r = 0.0;
+    marker.color.g = 1.0;
+    marker.color.b = 0.0;
+    vis_pub.publish(marker);
+}
 
 void imageCallback(const sensor_msgs::ImageConstPtr& msg) {
     if (image->bpp != msg->step / msg->width || image->width != msg->width || image->height != msg->height) {
@@ -45,6 +77,20 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg) {
         if (currentSegmentArray[i].valid) {
             objectArray[i] = trans->transform(currentSegmentArray[i]);
             printf("Image Points:  X:%f  Y:%f Z: %f ratio: %f\n", objectArray[i].x, objectArray[i].y, objectArray[i].z, objectArray[i].bwratio);
+            geometry_msgs::PoseStamped start_pose;
+            start_pose.header.stamp = ros::Time::now();
+
+            start_pose.pose.position.x = objectArray[i].x;
+            start_pose.pose.position.y = objectArray[i].y;
+            start_pose.pose.position.z = objectArray[i].z;
+            tf::Quaternion q;
+            q.setRPY(objectArray[i].roll, objectArray[i].pitch, objectArray[i].yaw);
+            start_pose.pose.orientation.x = q.getX();
+            start_pose.pose.orientation.y = q.getY();
+            start_pose.pose.orientation.z = q.getZ();
+            start_pose.pose.orientation.w = q.getW();
+            pubPose.publish(start_pose);
+            publishRVizMarker(start_pose);
         }
     }
     printf("%s\n", "--------------------");
@@ -94,40 +140,10 @@ int main(int argc, char* argv[]) {
     }
 
     image->getSaveNumber();
-
-    //==========================================================================
-    /*
-      geometry_msgs::Pose start_pose;
-
-      start_pose.position.x = 0.0;
-      start_pose.position.y = 0.0;
-      start_pose.position.z = 0.0;
-    
-      float x = 0.0;
-      float x = 0.0;
-      float x = 0.0;
-    
-      start_pose.orientation.w = (float) cos(0 / 2.0f);
-    
-    
-    
-    
-    
-    
-      tf::Transform transform;
-    transform.setOrigin( tf::Vector3(1.0, 1.0, 0.0) );
-    tf::Quaternion q;
-    q.setRPY(2.3, 2.0, 3);
-    
-      start_pose.orientation.x = q.getX();
-      start_pose.orientation.y = q.getY();
-      start_pose.orientation.z = q.getZ();
-      start_pose.orientation.w = q.getW();
-     */
-    //==========================================================================
-
     image_transport::Subscriber subim = it.subscribe("/" + topic + "/rgb/image_mono", 1, imageCallback);
     imdebug = it.advertise("/circledetection/" + topic + "/rgb/processedimage", 1);
+    pubPose = nh->advertise<geometry_msgs::PoseStamped>("/circledetection/" + topic + "/pose", 0);
+    vis_pub = nh->advertise<visualization_msgs::Marker>("visualization_marker", 0);
     ROS_DEBUG("Server running");
     ros::spin();
     delete image;
