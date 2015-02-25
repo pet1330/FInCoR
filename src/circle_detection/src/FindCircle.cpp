@@ -5,7 +5,6 @@
 #include <sensor_msgs/image_encodings.h>
 #include <geometry_msgs/Pose.h>
 #include <tf/LinearMath/QuadWord.h>
-#include <tf/tf.h>
 #include <cmath>
 #include <geometry_msgs/PointStamped.h>
 #include <geometry_msgs/PoseStamped.h>
@@ -46,7 +45,6 @@ CTransformation *trans;
 void publishRVizMarker(const geometry_msgs::PoseStamped cp, bool two) {
     visualization_msgs::Marker marker;
     marker.header = cp.header;
-    //marker.ns = "my_namespace";
     marker.id = 0;
     marker.type = visualization_msgs::Marker::SPHERE;
     marker.action = visualization_msgs::Marker::ADD;
@@ -83,7 +81,7 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg) {
         objectArray[i].valid = false;
         if (currentSegmentArray[i].valid) {
             objectArray[i] = trans->transform(currentSegmentArray[i]);
-           // printf("Image Points:  X:%f  Y:%f Z: %f ratio: %f\n", objectArray[i].x, objectArray[i].y, objectArray[i].z, objectArray[i].bwratio);
+            // printf("Image Points:  X:%f  Y:%f Z: %f ratio: %f\n", objectArray[i].x, objectArray[i].y, objectArray[i].z, objectArray[i].bwratio);
 
             geometry_msgs::PoseStamped start_pose, end_pose;
             start_pose.header.stamp = ros::Time::now();
@@ -103,9 +101,9 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg) {
             } catch (tf::TransformException ex) {
                 ROS_WARN("%s\n", ex.what());
             }
-            
-             printf("X:%f  Y:%f Z: %f\n", start_pose.pose.position.x, start_pose.pose.position.y, start_pose.pose.position.z);
-            
+
+            printf("X:%f  Y:%f Z: %f\n", start_pose.pose.position.x, start_pose.pose.position.y, start_pose.pose.position.z);
+
             pubPose.publish(end_pose);
             publishRVizMarker(start_pose, true);
             publishRVizMarker(end_pose, false);
