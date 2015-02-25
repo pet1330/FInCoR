@@ -5,7 +5,7 @@
   <include file="$(find openni_launch)/launch/openni.launch" output="log">
       <arg name="camera" value="right" />
       <arg name="tf_prefix" value="right" />
-      <arg name="device_id" value="#1" />
+      <arg name="device_id" value="#2" />
 
   </include>
 
@@ -13,7 +13,7 @@
   <include file="$(find openni_launch)/launch/openni.launch">
       <arg name="camera" value="left" />
       <arg name="tf_prefix" value="left" />
-      <arg name="device_id" value="#2" />
+      <arg name="device_id" value="#1" />
       
   </include>
   
