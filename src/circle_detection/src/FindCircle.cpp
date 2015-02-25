@@ -10,9 +10,13 @@
 #include <geometry_msgs/PointStamped.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <visualization_msgs/Marker.h>
+#include <tf/transform_broadcaster.h>
+
+#include <tf/transform_listener.h>
+#include <tf/transform_datatypes.h>
 
 
-#define MAX_PATTERNS 15
+#define MAX_PATTERNS 10
 
 int defaultImageWidth = 640;
 int defaultImageHeight = 480;
@@ -22,9 +26,13 @@ float rotateBy = 0;
 
 ros::NodeHandle *nh;
 image_transport::Publisher imdebug;
+tf::TransformListener* lookup;
 
 ros::Publisher pubPose;
 ros::Publisher vis_pub;
+ros::Publisher vis_pub2;
+
+std::string topic;
 
 CRawImage *image;
 
@@ -35,29 +43,28 @@ SSegment currentSegmentArray[MAX_PATTERNS];
 SSegment lastSegmentArray[MAX_PATTERNS];
 CTransformation *trans;
 
-void publishRVizMarker(const geometry_msgs::PoseStamped cp) {
+void publishRVizMarker(const geometry_msgs::PoseStamped cp, bool two) {
     visualization_msgs::Marker marker;
-    marker.header.frame_id = "base";
-    marker.header.stamp = cp.header.stamp;
+    marker.header = cp.header;
     //marker.ns = "my_namespace";
     marker.id = 0;
     marker.type = visualization_msgs::Marker::SPHERE;
     marker.action = visualization_msgs::Marker::ADD;
-    marker.pose.position.x = cp.pose.position.x;
-    marker.pose.position.y = cp.pose.position.y;
-    marker.pose.position.z = cp.pose.position.z;
-    marker.pose.orientation.x = cp.pose.orientation.x;
-    marker.pose.orientation.y = cp.pose.orientation.y;
-    marker.pose.orientation.z = cp.pose.orientation.z;
-    marker.pose.orientation.w = cp.pose.orientation.w;
-    marker.scale.x = 1;
+    marker.pose = cp.pose;
+
+    marker.scale.x = 0.1;
     marker.scale.y = 0.1;
     marker.scale.z = 0.1;
     marker.color.a = 1.0;
     marker.color.r = 0.0;
     marker.color.g = 1.0;
     marker.color.b = 0.0;
-    vis_pub.publish(marker);
+
+    if (two) {
+        vis_pub2.publish(marker);
+    } else {
+        vis_pub.publish(marker);
+    }
 }
 
 void imageCallback(const sensor_msgs::ImageConstPtr& msg) {
@@ -76,21 +83,32 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg) {
         objectArray[i].valid = false;
         if (currentSegmentArray[i].valid) {
             objectArray[i] = trans->transform(currentSegmentArray[i]);
-            printf("Image Points:  X:%f  Y:%f Z: %f ratio: %f\n", objectArray[i].x, objectArray[i].y, objectArray[i].z, objectArray[i].bwratio);
-            geometry_msgs::PoseStamped start_pose;
-            start_pose.header.stamp = ros::Time::now();
+           // printf("Image Points:  X:%f  Y:%f Z: %f ratio: %f\n", objectArray[i].x, objectArray[i].y, objectArray[i].z, objectArray[i].bwratio);
 
-            start_pose.pose.position.x = objectArray[i].x;
-            start_pose.pose.position.y = objectArray[i].y;
-            start_pose.pose.position.z = objectArray[i].z;
+            geometry_msgs::PoseStamped start_pose, end_pose;
+            start_pose.header.stamp = ros::Time::now();
+            start_pose.header.frame_id = "/" + topic + "/" + topic + "_rgb_optical_frame";
+            start_pose.pose.position.x = -objectArray[i].y;
+            start_pose.pose.position.y = -objectArray[i].z;
+            start_pose.pose.position.z = objectArray[i].x;
             tf::Quaternion q;
             q.setRPY(objectArray[i].roll, objectArray[i].pitch, objectArray[i].yaw);
             start_pose.pose.orientation.x = q.getX();
             start_pose.pose.orientation.y = q.getY();
             start_pose.pose.orientation.z = q.getZ();
             start_pose.pose.orientation.w = q.getW();
-            pubPose.publish(start_pose);
-            publishRVizMarker(start_pose);
+            try {
+                lookup->waitForTransform("base", start_pose.header.frame_id, start_pose.header.stamp, ros::Duration(1));
+                lookup->transformPose("/base", start_pose, end_pose);
+            } catch (tf::TransformException ex) {
+                ROS_WARN("%s\n", ex.what());
+            }
+            
+             printf("X:%f  Y:%f Z: %f\n", start_pose.pose.position.x, start_pose.pose.position.y, start_pose.pose.position.z);
+            
+            pubPose.publish(end_pose);
+            publishRVizMarker(start_pose, true);
+            publishRVizMarker(end_pose, false);
         }
     }
     printf("%s\n", "--------------------");
@@ -111,7 +129,6 @@ int main(int argc, char* argv[]) {
 
     ros::init(argc, argv, "circle_detector", ros::init_options::AnonymousName);
     nh = new ros::NodeHandle("~");
-    std::string topic;
 
     if (nh->getParam("camera", topic)) {
         std::transform(topic.begin(), topic.end(), topic.begin(), ::tolower);
@@ -144,6 +161,9 @@ int main(int argc, char* argv[]) {
     imdebug = it.advertise("/circledetection/" + topic + "/rgb/processedimage", 1);
     pubPose = nh->advertise<geometry_msgs::PoseStamped>("/circledetection/" + topic + "/pose", 0);
     vis_pub = nh->advertise<visualization_msgs::Marker>("visualization_marker", 0);
+    vis_pub2 = nh->advertise<visualization_msgs::Marker>("visualization_marker2", 0);
+    lookup = new tf::TransformListener();
+
     ROS_DEBUG("Server running");
     ros::spin();
     delete image;
