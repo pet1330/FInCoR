@@ -5,7 +5,6 @@
 #include <sensor_msgs/image_encodings.h>
 #include <geometry_msgs/Pose.h>
 #include <tf/LinearMath/QuadWord.h>
-#include <cmath>
 #include <geometry_msgs/PointStamped.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <visualization_msgs/Marker.h>
@@ -29,7 +28,8 @@ tf::TransformListener* lookup;
 
 ros::Publisher pubPose;
 ros::Publisher vis_pub;
-ros::Publisher vis_pub2;
+
+std::clock_t start;
 
 std::string topic;
 
@@ -42,7 +42,7 @@ SSegment currentSegmentArray[MAX_PATTERNS];
 SSegment lastSegmentArray[MAX_PATTERNS];
 CTransformation *trans;
 
-void publishRVizMarker(const geometry_msgs::PoseStamped cp, bool two) {
+void publishRVizMarker(const geometry_msgs::PoseStamped cp) {
     visualization_msgs::Marker marker;
     marker.header = cp.header;
     marker.id = 0;
@@ -57,12 +57,14 @@ void publishRVizMarker(const geometry_msgs::PoseStamped cp, bool two) {
     marker.color.r = 0.0;
     marker.color.g = 1.0;
     marker.color.b = 0.0;
+    vis_pub.publish(marker);
 
-    if (two) {
-        vis_pub2.publish(marker);
-    } else {
-        vis_pub.publish(marker);
-    }
+}
+
+std::string itemLookUp()
+{
+
+
 }
 
 void imageCallback(const sensor_msgs::ImageConstPtr& msg) {
@@ -81,32 +83,32 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg) {
         objectArray[i].valid = false;
         if (currentSegmentArray[i].valid) {
             objectArray[i] = trans->transform(currentSegmentArray[i]);
-            // printf("Image Points:  X:%f  Y:%f Z: %f ratio: %f\n", objectArray[i].x, objectArray[i].y, objectArray[i].z, objectArray[i].bwratio);
+            printf("Image Points:  X:%f  Y:%f Z: %f ratio: %f\n", objectArray[i].x, objectArray[i].y, objectArray[i].z, objectArray[i].bwratio);
 
-            geometry_msgs::PoseStamped start_pose, end_pose;
-            start_pose.header.stamp = ros::Time::now();
-            start_pose.header.frame_id = "/" + topic + "/" + topic + "_rgb_optical_frame";
-            start_pose.pose.position.x = -objectArray[i].y;
-            start_pose.pose.position.y = -objectArray[i].z;
-            start_pose.pose.position.z = objectArray[i].x;
+            geometry_msgs::PoseStamped circlePose;
+            circlePose.header.stamp = ros::Time::now();
+            circlePose.header.frame_id = "/" + topic + "/" + topic + "_rgb_optical_frame";
+            circlePose.pose.position.x = -objectArray[i].y;
+            circlePose.pose.position.y = -objectArray[i].z;
+            circlePose.pose.position.z = objectArray[i].x;
             tf::Quaternion q;
             q.setRPY(objectArray[i].roll, objectArray[i].pitch, objectArray[i].yaw);
-            start_pose.pose.orientation.x = q.getX();
-            start_pose.pose.orientation.y = q.getY();
-            start_pose.pose.orientation.z = q.getZ();
-            start_pose.pose.orientation.w = q.getW();
+            circlePose.pose.orientation.x = q.getX();
+            circlePose.pose.orientation.y = q.getY();
+            circlePose.pose.orientation.z = q.getZ();
+            circlePose.pose.orientation.w = q.getW();
+            
             try {
-                lookup->waitForTransform("base", start_pose.header.frame_id, start_pose.header.stamp, ros::Duration(1));
-                lookup->transformPose("/base", start_pose, end_pose);
+                lookup->waitForTransform("base", circlePose.header.frame_id, circlePose.header.stamp, ros::Duration(10));
+                lookup->transformPose("/base", circlePose, circlePose);
             } catch (tf::TransformException ex) {
                 ROS_WARN("%s\n", ex.what());
             }
-
-            printf("X:%f  Y:%f Z: %f\n", start_pose.pose.position.x, start_pose.pose.position.y, start_pose.pose.position.z);
-
-            pubPose.publish(end_pose);
-            publishRVizMarker(start_pose, true);
-            publishRVizMarker(end_pose, false);
+            printf("X:%f  Y:%f Z: %f\n", circlePose.pose.position.x, circlePose.pose.position.y, circlePose.pose.position.z);
+            
+            publishRVizMarker(circlePose);
+            
+            pubPose.publish(circlePose);
         }
     }
     printf("%s\n", "--------------------");
@@ -157,9 +159,8 @@ int main(int argc, char* argv[]) {
     image->getSaveNumber();
     image_transport::Subscriber subim = it.subscribe("/" + topic + "/rgb/image_mono", 1, imageCallback);
     imdebug = it.advertise("/circledetection/" + topic + "/rgb/processedimage", 1);
-    pubPose = nh->advertise<geometry_msgs::PoseStamped>("/circledetection/" + topic + "/pose", 0);
-    vis_pub = nh->advertise<visualization_msgs::Marker>("visualization_marker", 0);
-    vis_pub2 = nh->advertise<visualization_msgs::Marker>("visualization_marker2", 0);
+    pubPose = nh->advertise<geometry_msgs::PoseStamped>("/circledetection/pose", 0);
+    vis_pub = nh->advertise<visualization_msgs::Marker>("circledetection/rviz_marker", 0);
     lookup = new tf::TransformListener();
 
     ROS_DEBUG("Server running");
