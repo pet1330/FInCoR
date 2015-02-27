@@ -10,7 +10,7 @@ numberPerRow = (210 / (circleDiameter + (circleDiameter / 5)))
 numberPerColum = (297 / (circleDiameter + (circleDiameter / 5)))
 
 def gen_single_circle(outsideCircleRad, insideCircleRad):
-    
+    # EDIT THIS TO BE CLASS VAR circleDiameter INSTEAD OF 50
     increments = (outsideCircleRad - insideCircleRad) / 50
     scale = outsideCircleRad
     img = np.ones(((scale * 2) + 10, (scale * 2) + 10, 3), np.uint8)
@@ -24,7 +24,7 @@ def gen_pdf():
     pdf = FPDF()
     pdf.add_page()
     xPos = 0
-    yPos = 0
+    yPos = 1
     print numberPerRow, numberPerColum
     print "############################"
     for i in range(1, numOfCircles+1):
@@ -47,7 +47,7 @@ def gen_pdf():
                 pdf.add_page()
                 print "-------------------------------------"
                 xPos = 0
-                yPos = 0
+                yPos = 1
     pdf.output('BETA.pdf', 'F')
         
 gen_pdf()
