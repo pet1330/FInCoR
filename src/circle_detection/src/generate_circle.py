@@ -1,42 +1,47 @@
 import cv2
 from fpdf import FPDF
-import math
 import numpy as np
+import os
 import sys
 
-circleDiameter = 21
-numOfCircles = 100
+circleDiameter = 20
+numOfCircles = 33
+
+
+################################################################################
+####################### DO NOT EDIT BELOW THIS LINE! ###########################
+################################################################################
+
+
 numberPerRow = (210 / (circleDiameter + (circleDiameter / 5)))
 numberPerColum = (297 / (circleDiameter + (circleDiameter / 5)))
 
 def gen_single_circle(outsideCircleRad, insideCircleRad):
-    # EDIT THIS TO BE CLASS VAR circleDiameter INSTEAD OF 50
-    increments = (outsideCircleRad - insideCircleRad) / 50
-    scale = outsideCircleRad
-    img = np.ones(((scale * 2) + 10, (scale * 2) + 10, 3), np.uint8)
-    img[:,:] = (255, 255, 255)
+    img = np.ones(((outsideCircleRad * 2) + 12, (outsideCircleRad * 2) + 12, 3), np.uint8)
+    img[:, :] = (255, 255, 255)
     
-    for i in range(outsideCircleRad, insideCircleRad, -increments):
-        cv2.circle(img, (scale + 5, scale + 5), i, (0, 0, 0), increments)
+    for i in range(outsideCircleRad, insideCircleRad, -2):
+        cv2.circle(img, (outsideCircleRad + 6, outsideCircleRad + 6), i, (0, 0, 0), 2)
     return img
 
 def gen_pdf():
     pdf = FPDF()
     pdf.add_page()
     xPos = 0
-    yPos = 1
-    print numberPerRow, numberPerColum
-    print "############################"
-    for i in range(1, numOfCircles+1):
-        cv2.imwrite('circle.png', gen_single_circle(500, 200))
-        k = cv2.waitKey(500) & 0xFF
+    yPos = 1    
+    for i in range(1, numOfCircles + 1):
+        increments = 400 / numOfCircles
+        cv2.imwrite(str(i) + 'circle.png', gen_single_circle(500, (increments * i)))
+        cv2.imshow('circle.png', gen_single_circle(500, (increments * i)))
+        
+        k = cv2.waitKey(100) & 0xFF
         xPos += 1
         x = (xPos * (circleDiameter + (circleDiameter / 5)))-circleDiameter
         y = (yPos * (circleDiameter + (circleDiameter / 5)))
-#x = (xPos * (circleDiameter + (circleDiameter / 5)))-circleDiameter
-#y = (yPos * (circleDiameter + (circleDiameter / 5)))-circleDiameter
-        sys.stdout.write('(' + str(x) + ' , ' + str(y) + ')    ')
-        pdf.image('circle.png',x,y, circleDiameter, circleDiameter, 'png')    
+        sys.stdout.write('(' + str(x) + ' , ' + str(y) + ') ')
+        pdf.image(str(i) + 'circle.png', x, y, circleDiameter + 3, circleDiameter + 3, 'png')    
+        
+        os.remove(str(i) + 'circle.png');
         
         if xPos > numberPerRow-1:
             print ""
