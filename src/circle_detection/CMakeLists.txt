@@ -22,6 +22,11 @@ link_directories(${GSL_LIBRARY_DIRS})
 #   Charging.srv
 #)
 
+add_message_files(
+   FILES
+   STrackedObject.msg
+)
+
 #add_action_files(
 #   DIRECTORY action 
    #FILES Charging.action
@@ -29,8 +34,8 @@ link_directories(${GSL_LIBRARY_DIRS})
 
 generate_messages(
   DEPENDENCIES
-  std_msgs 
-  actionlib_msgs
+  geometry_msgs 
+  std_msgs
 )
 
 catkin_package(

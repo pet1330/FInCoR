@@ -8,18 +8,19 @@
 #include <geometry_msgs/PointStamped.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <visualization_msgs/Marker.h>
+#include <visualization_msgs/MarkerArray.h>
 #include <tf/transform_broadcaster.h>
-
+#include "circle_detection/STrackedObject.h"
 #include <tf/transform_listener.h>
 #include <tf/transform_datatypes.h>
+#include <sensor_msgs/Image.h>
 
 
 #define MAX_PATTERNS 10
 
 int defaultImageWidth = 640;
 int defaultImageHeight = 480;
-//float circleDiameter = 0.037;
-float circleDiameter = 0.0475;
+float circleDiameter = 0.05;
 float rotateBy = 0;
 
 ros::NodeHandle *nh;
@@ -30,7 +31,6 @@ ros::Publisher pubPose;
 ros::Publisher vis_pub;
 
 std::clock_t start;
-
 std::string topic;
 
 CRawImage *image;
@@ -51,7 +51,7 @@ void publishRVizMarker(const geometry_msgs::PoseStamped cp) {
     marker.pose = cp.pose;
     marker.scale.x = 0.1;
     marker.scale.y = 0.1;
-    marker.scale.z = 1.0;
+    marker.scale.z = 0.1;
     marker.color.a = 1.0;
     marker.color.r = 0.0;
     marker.color.g = 1.0;
@@ -60,9 +60,13 @@ void publishRVizMarker(const geometry_msgs::PoseStamped cp) {
 
 }
 
-std::string itemLookUp()
-{
+std::string itemLookUp() {
 
+    /*
+     *
+     * Give each circle a name or ID based on the ratio.
+     * 
+     */
 
 }
 
@@ -75,42 +79,59 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg) {
 
     memcpy(image->data, (void*) &msg->data[0], msg->step * msg->height);
 
+    circle_detection::STrackedObject tracked_objects;
+    tracked_objects.header = msg->header;
+    visualization_msgs::MarkerArray marker_list;
+    marker_list.markers.resize(MAX_PATTERNS);
+
+
     //search image for circles
     for (int i = 0; i < MAX_PATTERNS; i++) {
         lastSegmentArray[i] = currentSegmentArray[i];
         currentSegmentArray[i] = detectorArray[i]->findSegment(image, lastSegmentArray[i]);
         objectArray[i].valid = false;
+
         if (currentSegmentArray[i].valid) {
             objectArray[i] = trans->transform(currentSegmentArray[i]);
-            printf("Image Points:  X:%f  Y:%f Z: %f ratio: %f\n", objectArray[i].x, objectArray[i].y, objectArray[i].z, objectArray[i].bwratio);
+            // printf("X:%f  Y:%f Z:%f R:%f\n", objectArray[i].x, objectArray[i].y, objectArray[i].z, objectArray[i].bwratio);
+            //std::cout << "F: " << msg->header.frame_id << "  X: " << objectArray[i].x << "  Y: " << objectArray[i].y << "  Z: " << objectArray[i].z << "  R: " << objectArray[i].bwratio << std::endl;
 
-            geometry_msgs::PoseStamped circlePose;
-            circlePose.header.stamp = ros::Time::now();
-            circlePose.header.frame_id = "/" + topic + "/" + topic + "_rgb_optical_frame";
-            circlePose.pose.position.x = -objectArray[i].y;
-            circlePose.pose.position.y = -objectArray[i].z;
-            circlePose.pose.position.z = objectArray[i].x;
+
+            geometry_msgs::Pose circlePose;
+            circlePose.position.x = -objectArray[i].y;
+            circlePose.position.y = -objectArray[i].z;
+            circlePose.position.z = objectArray[i].x;
             tf::Quaternion q;
             q.setRPY(objectArray[i].roll, objectArray[i].pitch, objectArray[i].yaw);
-            circlePose.pose.orientation.x = q.getX();
-            circlePose.pose.orientation.y = q.getY();
-            circlePose.pose.orientation.z = q.getZ();
-            circlePose.pose.orientation.w = q.getW();
-            
-            try {
-                lookup->waitForTransform("base", circlePose.header.frame_id, circlePose.header.stamp, ros::Duration(10));
-                lookup->transformPose("/base", circlePose, circlePose);
-            } catch (tf::TransformException ex) {
-                ROS_WARN("%s\n", ex.what());
-            }
-            printf("X:%f  Y:%f Z: %f\n", circlePose.pose.position.x, circlePose.pose.position.y, circlePose.pose.position.z);
-            
-            publishRVizMarker(circlePose);
-            
-            pubPose.publish(circlePose);
+            circlePose.orientation.x = q.getX();
+            circlePose.orientation.y = q.getY();
+            circlePose.orientation.z = q.getZ();
+            circlePose.orientation.w = q.getW();
+            tracked_objects.pose.push_back(circlePose);
+            tracked_objects.roundness.push_back(objectArray[i].roundness);
+            tracked_objects.bwratio.push_back(objectArray[i].bwratio);
+            tracked_objects.esterror.push_back(objectArray[i].esterror);
+
+            visualization_msgs::Marker marker;
+            marker.header = msg->header;
+            marker.id = i;
+            marker.type = visualization_msgs::Marker::SPHERE;
+            marker.action = visualization_msgs::Marker::ADD;
+            marker.pose = circlePose;
+            marker.scale.x = 0.01;
+            marker.scale.y = 0.01;
+            marker.scale.z = 0.1;
+            marker.color.a = 1.0;
+            marker.color.r = 0.0;
+            marker.color.g = 1.0;
+            marker.color.b = 0.0;
+            marker_list.markers[i] = marker;
         }
     }
-    printf("%s\n", "--------------------");
+    pubPose.publish(tracked_objects);
+    vis_pub.publish(marker_list);
+
+    //printf("%s\n", "--------------------");
     //and publish the result
     memcpy((void*) &msg->data[0], image->data, msg->step * msg->height);
     imdebug.publish(msg);
@@ -118,10 +139,6 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg) {
 
 void cameraInfoCallBack(const sensor_msgs::CameraInfo &msg) {
     trans->updateParams(msg.K[2], msg.K[5], msg.K[0], msg.K[4]);
-}
-
-void depthCallback(const sensor_msgs::ImageConstPtr& msg) {
-
 }
 
 int main(int argc, char* argv[]) {
@@ -158,8 +175,8 @@ int main(int argc, char* argv[]) {
     image->getSaveNumber();
     image_transport::Subscriber subim = it.subscribe("/" + topic + "/rgb/image_mono", 1, imageCallback);
     imdebug = it.advertise("/circledetection/" + topic + "/rgb/processedimage", 1);
-    pubPose = nh->advertise<geometry_msgs::PoseStamped>("/circledetection/pose", 0);
-    vis_pub = nh->advertise<visualization_msgs::Marker>("circledetection/rviz_marker", 0);
+    pubPose = nh->advertise<circle_detection::STrackedObject>("/circledetection/circleArray", 0);
+    vis_pub = nh->advertise<visualization_msgs::MarkerArray>("circledetection/rviz_marker", 0);
     lookup = new tf::TransformListener();
 
     ROS_DEBUG("Server running");
