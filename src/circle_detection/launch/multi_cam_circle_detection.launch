@@ -17,6 +17,6 @@
 	<remap from="image" to="/circledetection/right/rgb/processedimage"/>
 
 </node>
-
+    <include file="$(find circle_detection)/launch/bayes_tracking.launch" />
 </launch>
 

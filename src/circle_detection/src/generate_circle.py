@@ -4,8 +4,8 @@ import numpy as np
 import os
 import sys
 
-circleDiameter = 20
-numOfCircles = 33
+circleDiameter = 50
+numOfCircles = 9
 
 
 ################################################################################
@@ -30,11 +30,11 @@ def gen_pdf():
     xPos = 0
     yPos = 1    
     for i in range(1, numOfCircles + 1):
-        increments = 400 / numOfCircles
-        cv2.imwrite(str(i) + 'circle.png', gen_single_circle(500, (increments * i)))
-        cv2.imshow('circle.png', gen_single_circle(500, (increments * i)))
+        increments = 200 / numOfCircles
+        cv2.imwrite(str(i) + 'circle.png', gen_single_circle(500+100, ((increments * i)+100)))
+        cv2.imshow('circle.png', gen_single_circle(500+100, ((increments * i)+100)))
         
-        k = cv2.waitKey(100) & 0xFF
+        k = cv2.waitKey(200) & 0xFF
         xPos += 1
         x = (xPos * (circleDiameter + (circleDiameter / 5)))-circleDiameter
         y = (yPos * (circleDiameter + (circleDiameter / 5)))
