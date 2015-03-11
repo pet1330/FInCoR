@@ -8,13 +8,17 @@ import rospy
 from sensor_msgs.msg import Image
 import sys
 import tf
-import yaml
+import rospkg
 
 class calibrate_camera:
 
     def __init__(self):
         
-        self.no_frames = 1000;
+        try:
+        	self.no_frames = rospy.get_param('/camera_calibration/frames');
+        except:
+        	self.no_frames = 1000
+        print self.no_frames
         self.pattern_size = (6, 8)
         
         self.pattern_points = np.zeros((np.prod(self.pattern_size), 3), np.float32)
@@ -37,21 +41,25 @@ class calibrate_camera:
         self.right_image = rospy.Subscriber('/right/rgb/image_color', Image, self.right_callback)
         self.br = tf.TransformBroadcaster()
         self.listener = tf.TransformListener()
+        self.pt = {'previous_transform': {'left': {'orientation': [0.0, 0.0, 0.0, 0.0],
+                                 'position': [0.0, 0.0, 0.0]},
+                        'right': {'orientation': [0.0, 0.0, 0.0, 0.0],
+                                  'position': [0.0, 0.0, 0.0]}}}
+        
+        self.rospack = rospkg.RosPack()
         try:
-            pt = rospy.get_param('~previous_transform')
-            self.final_left_xyz = pt['left']['position']
-            self.final_left_q = pt['left']['orientation']
-            self.final_right_xyz = pt['right']['position']
-            self.final_right_q = pt['right']['orientation']
+            self.pt = rosparam.load_file(self.rospack.get_path('camera_setup') + '/parameters/previous_transform.yaml')[0][0]
+        except:
+            self.still_calibrating = True
 
+        if rospy.get_param('~quick'):
+            self.final_left_xyz = self.pt['previous_transform']['left']['position']
+            self.final_left_q = self.pt['previous_transform']['left']['orientation']
+            self.final_right_xyz = self.pt['previous_transform']['right']['position']
+            self.final_right_q = self.pt['previous_transform']['right']['orientation']
             self.still_calibrating = False
             self.publish_feedback()
-        except:
-            b = rospy.get_param_names()
-            for a in b:
-                print a 
-            pass
-
+        
     def find_tf(self, ros_image_msg, invert):
         try:
             #Colour Image
@@ -99,24 +107,18 @@ class calibrate_camera:
             
             if self.count[0] > self.no_frames and self.count[1] > self.no_frames and self.still_calibrating:
                 self.still_calibrating = False
+                
                 print "Successfully Calibrated over %d frames, " % self.no_frames
-##############################################################################################################                
-                
-               # rospy.set_param('/camera_setup/left/position', self.final_left_xyz)
-               # rospy.set_param('/camera_setup/right/position', self.final_right_xyz)
 
-                
+                self.pt['previous_transform']['left']['position'] = self.final_left_xyz.tolist()
+                self.pt['previous_transform']['right']['position'] = self.final_right_xyz.tolist()
+                self.pt['previous_transform']['left']['orientation'] = self.final_left_q.tolist()
+                self.pt['previous_transform']['right']['orientation'] = self.final_right_q.tolist()
 
-                #rospy.set_param('/camera_setup/left/orientation', self.final_left_q)
-
-                #rospy.set_param('/camera_setup/right/orientation', self.final_right_q)
-
-                #rosparam.dump_params('/home/peter/FInCoR/src/camera_setup/parameters/previous_transform2.yaml', '/camera_setup', verbose=False)
-                
+                print self.pt
+                rospy.set_param('calibrate_camera',self.pt)
+                rosparam.dump_params(self.rospack.get_path('camera_setup') + '/parameters/previous_transform.yaml', 'calibrate_camera', verbose=False)
                 self.publish_feedback()
-#############################################################################################################
-                
-
 
     def update_progress(self):
         progress = (float(min(self.count)))
