@@ -1,22 +1,25 @@
 <?xml version="1.0"?>
 <launch>
 
-<node name="LeftCircleFinder" pkg="circle_detection" type="circle_finder" required="false" output="screen" clear_params="true">
-	<param name="camera" type="str" value="Left" />
-</node>
+	<node name="LeftCircleFinder" pkg="circle_detection" type="circle_finder" required="false" output="screen" clear_params="true">
+		<param name="camera" type="str" value="Left" />
+	</node>
 
-<node name="RightCircleFinder" pkg="circle_detection" type="circle_finder" required="false" output="screen" clear_params="true">
-	<param name="camera" type="str" value="Right" />
-</node>
+	<node name="RightCircleFinder" pkg="circle_detection" type="circle_finder" required="false" output="screen" clear_params="true">
+		<param name="camera" type="str" value="Right" />
+	</node>
 
-<node name="view_left" pkg="image_view" type="image_view" required="false">
-	<remap from="image" to="/circledetection/left/rgb/processedimage"/>
-</node>
+	<node name="view_left" pkg="image_view" type="image_view" required="false">
+		<remap from="image" to="/circledetection/left/rgb/processedimage"/>
+	</node>
 
-<node name="view_right" pkg="image_view" type="image_view" required="false">
-	<remap from="image" to="/circledetection/right/rgb/processedimage"/>
+	<node name="view_right" pkg="image_view" type="image_view" required="false">
+		<remap from="image" to="/circledetection/right/rgb/processedimage"/>
+	</node>
 
-</node>
-    <include file="$(find circle_detection)/launch/bayes_tracking.launch" />
+	<!-- custom msg to pose msg convertion -->
+	<include file='$(find detector_msg_to_pose_array)/launch/to_pose_array.launch'>
+	    <arg name='param_file' value='$(find circle_detection)/config/to_pose_array.yaml' />
+	</include>
+
 </launch>
-

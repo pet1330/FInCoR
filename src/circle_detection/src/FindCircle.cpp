@@ -14,6 +14,7 @@
 #include <tf/transform_listener.h>
 #include <tf/transform_datatypes.h>
 #include <sensor_msgs/Image.h>
+#include <math.h>
 
 
 #define MAX_PATTERNS 10
@@ -26,9 +27,7 @@ float rotateBy = 0;
 ros::NodeHandle *nh;
 image_transport::Publisher imdebug;
 tf::TransformListener* lookup;
-
-ros::Publisher pubPose;
-ros::Publisher vis_pub;
+ros::Publisher pubLeft, pubRight, vis_pub;
 
 std::clock_t start;
 std::string topic;
@@ -41,24 +40,6 @@ STrackedObject objectArray3D[MAX_PATTERNS];
 SSegment currentSegmentArray[MAX_PATTERNS];
 SSegment lastSegmentArray[MAX_PATTERNS];
 CTransformation *trans;
-
-void publishRVizMarker(const geometry_msgs::PoseStamped cp) {
-    visualization_msgs::Marker marker;
-    marker.header = cp.header;
-    marker.id = 0;
-    marker.type = visualization_msgs::Marker::SPHERE;
-    marker.action = visualization_msgs::Marker::ADD;
-    marker.pose = cp.pose;
-    marker.scale.x = 0.1;
-    marker.scale.y = 0.1;
-    marker.scale.z = 0.1;
-    marker.color.a = 1.0;
-    marker.color.r = 0.0;
-    marker.color.g = 1.0;
-    marker.color.b = 0.0;
-    vis_pub.publish(marker);
-
-}
 
 std::string itemLookUp() {
 
@@ -82,8 +63,6 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg) {
     circle_detection::STrackedObject tracked_objects;
     tracked_objects.header = msg->header;
     visualization_msgs::MarkerArray marker_list;
-    marker_list.markers.resize(MAX_PATTERNS);
-
 
     //search image for circles
     for (int i = 0; i < MAX_PATTERNS; i++) {
@@ -114,9 +93,9 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg) {
 
             visualization_msgs::Marker marker;
             marker.header = msg->header;
-            marker.id = i;
+            marker.id = floor(objectArray[i].bwratio);
             marker.type = visualization_msgs::Marker::SPHERE;
-            marker.action = visualization_msgs::Marker::ADD;
+            marker.action = visualization_msgs::Marker::MODIFY;
             marker.pose = circlePose;
             marker.scale.x = 0.01;
             marker.scale.y = 0.01;
@@ -125,14 +104,21 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg) {
             marker.color.r = 0.0;
             marker.color.g = 1.0;
             marker.color.b = 0.0;
-            marker_list.markers[i] = marker;
+            marker.lifetime = ros::Duration(0.2);
+            marker_list.markers.push_back(marker);
         }
     }
-    pubPose.publish(tracked_objects);
-    vis_pub.publish(marker_list);
 
+    if ((marker_list.markers.size() > 0) && (tracked_objects.pose.size() > 0)) {
+
+        if (tracked_objects.header.frame_id.find("left") != std::string::npos) {
+            pubLeft.publish(tracked_objects);
+        } else {
+            pubRight.publish(tracked_objects);
+        }
+        vis_pub.publish(marker_list);
+    }
     //printf("%s\n", "--------------------");
-    //and publish the result
     memcpy((void*) &msg->data[0], image->data, msg->step * msg->height);
     imdebug.publish(msg);
 }
@@ -175,8 +161,11 @@ int main(int argc, char* argv[]) {
     image->getSaveNumber();
     image_transport::Subscriber subim = it.subscribe("/" + topic + "/rgb/image_mono", 1, imageCallback);
     imdebug = it.advertise("/circledetection/" + topic + "/rgb/processedimage", 1);
-    pubPose = nh->advertise<circle_detection::STrackedObject>("/circledetection/circleArray", 0);
-    vis_pub = nh->advertise<visualization_msgs::MarkerArray>("circledetection/rviz_marker", 0);
+
+    pubLeft = nh->advertise<circle_detection::STrackedObject>("/circledetection/left_circleArray", 0);
+    pubRight = nh->advertise<circle_detection::STrackedObject>("/circledetection/right_circleArray", 0);
+
+    vis_pub = nh->advertise<visualization_msgs::MarkerArray>("/circledetection/rviz_marker", 0);
     lookup = new tf::TransformListener();
 
     ROS_DEBUG("Server running");
