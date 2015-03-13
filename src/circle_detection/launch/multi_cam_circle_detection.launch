@@ -1,25 +1,39 @@
 <?xml version="1.0"?>
 <launch>
+    <arg name="target_frame" default="/base" />
+    <arg name="positions" default="/people_tracker/positions" />
+    <arg name="marker" default="/people_tracker/marker_array" />
+    <arg name="machine" default="localhost" />
+    <arg name="user" default="" />
 
-	<node name="LeftCircleFinder" pkg="circle_detection" type="circle_finder" required="false" output="screen" clear_params="true">
+	<!-- Start Circle Detection and Tracking for Left Camera -->
+	<node name="LeftCircleFinder" pkg="circle_detection" type="circle_finder" required="true" output="screen" clear_params="true">
 		<param name="camera" type="str" value="Left" />
 	</node>
 
-	<node name="RightCircleFinder" pkg="circle_detection" type="circle_finder" required="false" output="screen" clear_params="true">
+	<!-- Start Circle Detection and Tracking for right Camera -->
+	<node name="RightCircleFinder" pkg="circle_detection" type="circle_finder" required="true" output="screen" clear_params="true">
 		<param name="camera" type="str" value="Right" />
 	</node>
 
-	<node name="view_left" pkg="image_view" type="image_view" required="false">
+	<!-- View procesed image from left circle tracker  -->
+	<node name="view_left" pkg="image_view" type="image_view" required="true">
 		<remap from="image" to="/circledetection/left/rgb/processedimage"/>
 	</node>
 
-	<node name="view_right" pkg="image_view" type="image_view" required="false">
+	<!-- View procesed image from right circle tracker  -->
+	<node name="view_right" pkg="image_view" type="image_view" required="true">
 		<remap from="image" to="/circledetection/right/rgb/processedimage"/>
 	</node>
 
 	<!-- custom msg to pose msg convertion -->
-	<include file='$(find detector_msg_to_pose_array)/launch/to_pose_array.launch'>
-	    <arg name='param_file' value='$(find circle_detection)/config/to_pose_array.yaml' />
+	<include file="$(find detector_msg_to_pose_array)/launch/to_pose_array.launch">
+	    <arg name="param_file" value="$(find circle_detection)/config/to_pose_array.yaml" />
 	</include>
+
+	<!-- View procesed image from circle tracker  -->
+    <include file='$(find bayes_people_tracker)/launch/people_tracker.launch'>
+        <arg name='target_frame' value='base' />
+    </include>
 
 </launch>

@@ -11,13 +11,15 @@
       <arg name='device_id' value='#2' />
 
   </include>
+
   <!-- Start openni_launch - starts publishing RGB-D data from Kinect -->
   <include file='$(find openni_launch)/launch/openni.launch'>
       <arg name='camera' value='left' />
       <arg name='tf_prefix' value='left' />
       <arg name='device_id' value='#1' />
-      
   </include>
+
+
   <node name='camera_calibration' pkg='camera_setup' type='multi_cam_calibration.py' required='true' output='screen' >
     <param name="quick" type="bool"  value="$(arg quick)" />
     <param name="frames" type="int" value="$(arg frames)" />
