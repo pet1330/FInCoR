@@ -138,15 +138,15 @@ private:
             int action,
             geometry_msgs::Pose pose) {
         geometry_msgs::Vector3 scale;
-        scale.x = 0.35;
-        scale.y = 0.35;
-        scale.z = 0.7;
+        scale.x = 0.1;
+        scale.y = 0.1;
+        scale.z = 0.01;
         std_msgs::ColorRGBA color;
         color.a = 1.0;
         color.r = 139.0F/255.0F;
         color.g = 0.0F/255.0F;
         color.b = 0.0F/255.0F;
-        pose.position.z = 1.1;
+        pose.position.z = 0.03;
         return createMarker(id, visualization_msgs::Marker::CYLINDER, action, pose, scale, color);
     }
 
@@ -192,12 +192,12 @@ private:
             int id,
             geometry_msgs::Pose pose) {
         std::vector<visualization_msgs::Marker> human;
-        human.push_back(createHead(id++, visualization_msgs::Marker::ADD, pose));
+        //human.push_back(createHead(id++, visualization_msgs::Marker::ADD, pose));
         human.push_back(createBody(id++, visualization_msgs::Marker::ADD, pose));
-        std::vector<visualization_msgs::Marker> legs = createLegs(id++, id++, visualization_msgs::Marker::ADD, pose);
-        human.insert(human.end(), legs.begin(), legs.end());
-        std::vector<visualization_msgs::Marker> arms = createArms(id++, id++, visualization_msgs::Marker::ADD, pose);
-        human.insert(human.end(), arms.begin(), arms.end());
+        //std::vector<visualization_msgs::Marker> legs = createLegs(id++, id++, visualization_msgs::Marker::ADD, pose);
+        //human.insert(human.end(), legs.begin(), legs.end());
+        //std::vector<visualization_msgs::Marker> arms = createArms(id++, id++, visualization_msgs::Marker::ADD, pose);
+        //human.insert(human.end(), arms.begin(), arms.end());
         return human;
     }
 

@@ -244,6 +244,8 @@ void PeopleTracker::detectorCallback(const geometry_msgs::PoseArray::ConstPtr &p
     std::vector<double> angles;
     double min_dist = 10000.0d;
     double angle;
+    
+    std::cout << "Array Input: " << std::endl;
     for(int i = 0; i < pta->poses.size(); i++) {
         geometry_msgs::Pose pt = pta->poses[i];
 
@@ -275,9 +277,11 @@ void PeopleTracker::detectorCallback(const geometry_msgs::PoseArray::ConstPtr &p
                 return;
             }
 
-            poseInTargetCoords.pose.position.z = 0.0;
-            poseInRobotCoords.pose.position.z = 0.0;
-
+            
+            std::cout << i << ": " << std::endl << pt << std::endl;
+            
+            std::cout << "robotTF: " << std::endl << poseInTargetCoords.pose << std::endl;
+            
             ppl.push_back(poseInTargetCoords.pose.position);
 
     }
