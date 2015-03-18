@@ -39,15 +39,18 @@ using namespace MTRK;
 using namespace Models;
 
 // rule to detect lost track
+
 template<class FilterType>
 bool MTRK::isLost(const FilterType* filter) {
     // track lost if var(x)+var(y) > 1
-    if (filter->X(0,0) + filter->X(2,2) > sqr(1.0))
+    if (filter->X(0, 0) + filter->X(2, 2) > sqr(1.0)) {
         return true;
+    }
     return false;
 }
 
 // rule to create new track
+
 template<class FilterType>
 bool MTRK::initialize(FilterType* &filter, sequence_t& obsvSeq) {
     assert(obsvSeq.size());
@@ -56,43 +59,48 @@ bool MTRK::initialize(FilterType* &filter, sequence_t& obsvSeq) {
     assert(dt); // dt must not be null
     FM::Vec v((obsvSeq.back().vec - obsvSeq.front().vec) / dt);
 
-    FM::Vec x(4);
-    FM::SymMatrix X(4,4);
+    FM::Vec x(6);
+    FM::SymMatrix X(6, 6);
 
     x[0] = obsvSeq.back().vec[0];
     x[1] = v[0];
     x[2] = obsvSeq.back().vec[1];
     x[3] = v[1];
+    x[4] = obsvSeq.back().vec[2];
+    x[5] = v[2];
     X.clear();
-    X(0,0) = sqr(0.2);
-    X(1,1) = sqr(1.0);
-    X(2,2) = sqr(0.2);
-    X(3,3) = sqr(1.0);
+    X(0, 0) = sqr(0.2);
+    X(1, 1) = sqr(1.0);
+    X(2, 2) = sqr(0.2);
+    X(3, 3) = sqr(1.0);
+    X(4, 4) = sqr(0.2);
+    X(5, 5) = sqr(1.0);
 
-    filter = new FilterType(4);
+
+    filter = new FilterType(6);
     filter->init(x, X);
 
     return true;
 }
 
 template<typename FilterType>
-class SimpleTracking
-{
+class SimpleTracking {
 public:
+
     SimpleTracking() {
         time = getTime();
-        observation = new FM::Vec(2);
+        observation = new FM::Vec(3);
     }
 
-    void createConstantVelocityModel(double vel_noise_x, double vel_noise_y) {
-        cvm = new CVModel(vel_noise_x, vel_noise_y);
+    void createConstantVelocityModel(double vel_noise_x, double vel_noise_y, double vel_noise_z) {
+        cvm = new CVModel3D(vel_noise_x, vel_noise_y, vel_noise_z);
     }
 
-    void addDetectorModel(std::string name, association_t alg, double pos_noise_x, double pos_noise_y) {
+    void addDetectorModel(std::string name, association_t alg, double pos_noise_x, double pos_noise_y, double pos_noise_z) {
         ROS_INFO("Adding detector model for: %s.", name.c_str());
         detector_model det;
         det.alg = alg;
-        det.ctm = new CartesianModel(pos_noise_x, pos_noise_y);
+        det.ctm = new CartesianModel3D(pos_noise_x, pos_noise_y, pos_noise_z);
         detectors[name] = det;
     }
 
@@ -101,36 +109,43 @@ public:
         std::map<long, std::vector<geometry_msgs::Pose> > result;
         dt = getTime() - time;
         time += dt;
-        if(track_time) *track_time = time;
+        if (track_time) *track_time = time;
 
-        for(typename std::map<std::string, detector_model>::const_iterator it = detectors.begin();
-            it != detectors.end();
-            ++it) {
+        for (typename std::map<std::string, detector_model>::const_iterator it = detectors.begin();
+                it != detectors.end();
+                ++it) {
             // prediction
             cvm->update(dt);
-            mtrk.template predict<CVModel>(*cvm);
+            mtrk.template predict<CVModel3D>(*cvm);
 
             // process observations (if available) and update tracks
             mtrk.process(*(it->second.ctm), it->second.alg);
         }
 
         for (int i = 0; i < mtrk.size(); i++) {
-            double theta = atan2(mtrk[i].filter->x[3], mtrk[i].filter->x[1]);
-            ROS_DEBUG("trk_%ld: Position: (%f, %f), Orientation: %f, Std Deviation: %f, %f",
-                    mtrk[i].id,
-                    mtrk[i].filter->x[0], mtrk[i].filter->x[2], //x, y
-                    theta, //orientation
-                    sqrt(mtrk[i].filter->X(0,0)), sqrt(mtrk[i].filter->X(2,2))//std dev
-                    );
+            // mtrk[i].filter->x[5], mtrk[i].filter->x[3], mtrk[i].filter->x[1]
+            //ROS_DEBUG("trk_%ld: Position: (%f, %f, %f), Orientation: (%f, %f, %f), Std Deviation: %f, %f, %f",
+            //       mtrk[i].id,
+            //      mtrk[i].filter->x[0], mtrk[i].filter->x[2], mtrk[i].filter->x[4], //x, y, z
+            //     theta, theta, theta, //orientation
+            //    sqrt(mtrk[i].filter->X(0, 0)), sqrt(mtrk[i].filter->X(2, 2)), sqrt(mtrk[i].filter->X(4, 4)) //std dev
+            //   );
+
             geometry_msgs::Pose pose, vel;
             pose.position.x = mtrk[i].filter->x[0];
             pose.position.y = mtrk[i].filter->x[2];
-            pose.orientation.z = sin(theta/2);
-            pose.orientation.w = cos(theta/2);
+            pose.position.z = mtrk[i].filter->x[4];
+            printf("%f\n",mtrk[i].filter->x[4]);
+
+            pose.orientation.x = 0;
+            pose.orientation.y = 0;
+            pose.orientation.z = 0;
+            pose.orientation.w = 1;
             result[mtrk[i].id].push_back(pose);
 
             vel.position.x = mtrk[i].filter->x[1];
             vel.position.y = mtrk[i].filter->x[3];
+            vel.position.z = mtrk[i].filter->x[5];
             result[mtrk[i].id].push_back(vel);
         }
         return result;
@@ -153,7 +168,7 @@ public:
 
         // prediction
         cvm->update(dt);
-        mtrk.template predict<CVModel>(*cvm);
+        mtrk.template predict<CVModel3D>(*cvm);
 
         mtrk.process(*(det.ctm), det.alg);
 
@@ -161,21 +176,22 @@ public:
         for (li = obsv.begin(); li != liEnd; li++) {
             (*observation)[0] = li->x;
             (*observation)[1] = li->y;
+            (*observation)[2] = li->z;
             mtrk.addObservation(*observation, obsv_time);
         }
     }
 
 private:
 
-    FM::Vec *observation;           // observation [x, y]
+    FM::Vec *observation; // observation [x, y, z]
     double dt, time;
     boost::mutex mutex;
-    CVModel *cvm;                   // CV model
-    MultiTracker<FilterType, 4> mtrk; // state [x, v_x, y, v_y]
+    CVModel3D *cvm; // CV model
+    MultiTracker<FilterType, 6> mtrk; // state [x, v_x, y, v_y, z, v_Z]
 
     typedef struct {
-        CartesianModel *ctm;        // Cartesian observation model
-        association_t alg;          // Data association algorithm
+        CartesianModel3D *ctm; // Cartesian observation model
+        association_t alg; // Data association algorithm
     } detector_model;
     std::map<std::string, detector_model> detectors;
 

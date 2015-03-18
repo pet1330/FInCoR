@@ -21,7 +21,7 @@
 
 int defaultImageWidth = 640;
 int defaultImageHeight = 480;
-float circleDiameter = 0.05;
+float circleDiameter = 0.049;
 float rotateBy = 0;
 
 ros::NodeHandle *nh;
