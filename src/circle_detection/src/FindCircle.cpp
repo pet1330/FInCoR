@@ -17,7 +17,7 @@
 #include <math.h>
 
 
-#define MAX_PATTERNS 10
+#define MAX_PATTERNS 6
 
 int defaultImageWidth = 640;
 int defaultImageHeight = 480;
@@ -72,9 +72,16 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg) {
 
         if (currentSegmentArray[i].valid) {
             objectArray[i] = trans->transform(currentSegmentArray[i]);
-            // printf("X:%f  Y:%f Z:%f R:%f\n", objectArray[i].x, objectArray[i].y, objectArray[i].z, objectArray[i].bwratio);
-            //std::cout << "F: " << msg->header.frame_id << "  X: " << objectArray[i].x << "  Y: " << objectArray[i].y << "  Z: " << objectArray[i].z << "  R: " << objectArray[i].bwratio << std::endl;
+            
+            if(isnan(objectArray[i].x)) continue;
+            if(isnan(objectArray[i].y)) continue;
+            if(isnan(objectArray[i].z)) continue;
+            if(isnan(objectArray[i].roll)) continue;
+            if(isnan(objectArray[i].pitch)) continue;
+            if(isnan(objectArray[i].yaw)) continue;
 
+            // printf("X:%f  Y:%f Z:%f R:%f\n", objectArray[i].x, objectArray[i].y, objectArray[i].z, objectArray[i].bwratio);
+            std::cout << "F: " << msg->header.frame_id << "  X: " << objectArray[i].x << "  Y: " << objectArray[i].y << "  Z: " << objectArray[i].z << "  R: " << objectArray[i].bwratio << std::endl;
 
             geometry_msgs::Pose circlePose;
             circlePose.position.x = -objectArray[i].y;
