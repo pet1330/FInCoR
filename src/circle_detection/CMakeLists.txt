@@ -71,6 +71,8 @@ target_link_libraries (circle_finder
     CCircleDetect
     CRawImage
     CTransformation
+    gsl
+    blas
     ${catkin_LIBRARIES}
     )
 #target_link_libraries (circle_finder_client  ${catkin_LIBRARIES})
