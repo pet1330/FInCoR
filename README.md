@@ -13,4 +13,10 @@ This node can be used to detect and identify circles within a 3D scene.
 
 To run this node source the workspace and use `roslaunch circle_detection multi_cam_circle_detection.launch`
 
-### 
+### External Models Required
+
+* [FInCoR] (https://github.com/pet1330/FInCoR) (this repository)
+* [STRANDS Human Robot Interaction] (https://github.com/pet1330/strands_hri)
+* [STRANDS QSR Library] (https://github.com/pet1330/strands_qsr_lib)
+* [Bayes Probabilistic Tracking] (https://github.com/pet1330/bayestracking)
+* [STRANDS People Perception] (https://github.com/pet1330/strands_perception_people)
