@@ -126,7 +126,7 @@ private:
         scale.z = 0.3;
         std_msgs::ColorRGBA color;
         color.a = 1.0;
-        color.r = 233.0F/255.0F;
+        color.r = id/1.0F; //233.0F/255.0F;
         color.g = 150.0F/255.0F;
         color.b = 122.0F/255.0F;
         pose.position.z = 1.6;
@@ -146,45 +146,9 @@ private:
         color.r = 139.0F/255.0F;
         color.g = 0.0F/255.0F;
         color.b = 0.0F/255.0F;
+        //pose.position.z = 0.2;
+
         return createMarker(id, visualization_msgs::Marker::CYLINDER, action, pose, scale, color);
-    }
-
-    std::vector<visualization_msgs::Marker> createLegs(
-            int idl, int idr,
-            int action,
-            geometry_msgs::Pose pose) {
-        std::vector<visualization_msgs::Marker> legs;
-        geometry_msgs::Vector3 scale;
-        scale.x = 0.15;
-        scale.y = 0.2;
-        scale.z = 0.8;
-        std_msgs::ColorRGBA color;
-        color.a = 1.0;
-        color.r = 0.0F/255.0F;
-        color.g = 0.0F/255.0F;
-        color.b = 139.0F/255.0F;
-        legs.push_back(createMarker(idl, visualization_msgs::Marker::CYLINDER, action, generate_extremity_position(pose, 0.1, 0.0, 0.4), scale, color));
-        legs.push_back(createMarker(idr, visualization_msgs::Marker::CYLINDER, action, generate_extremity_position(pose, -0.1, 0.0, 0.4), scale, color));
-        return legs;
-    }
-
-    std::vector<visualization_msgs::Marker> createArms(
-            int idl, int idr,
-            int action,
-            geometry_msgs::Pose pose) {
-        std::vector<visualization_msgs::Marker> arms;
-        geometry_msgs::Vector3 scale;
-        scale.x = 0.1;
-        scale.y = 0.1;
-        scale.z = 0.7;
-        std_msgs::ColorRGBA color;
-        color.a = 1.0;
-        color.r = 139.0F/255.0F;
-        color.g = 0.0F/255.0F;
-        color.b = 0.0F/255.0F;
-        arms.push_back(createMarker(idl, visualization_msgs::Marker::CYLINDER, action, generate_extremity_position(pose, 0.2, 0.0, 1.1), scale, color));
-        arms.push_back(createMarker(idr, visualization_msgs::Marker::CYLINDER, action, generate_extremity_position(pose, -0.2, 0.0, 1.1), scale, color));
-        return arms;
     }
 
     std::vector<visualization_msgs::Marker> createHuman(
