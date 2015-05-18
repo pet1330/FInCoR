@@ -48,7 +48,7 @@ class calibrate_camera:
         
         self.rospack = rospkg.RosPack()
         try:
-            self.pt = rosparam.load_file(self.rospack.get_path('camera_setup') + '/parameters/previous_transform.yaml')[0][0]
+            self.pt = rosparam.load_file(self.rospack.get_path('camera_setup') + '/config/previous_transform.yaml')[0][0]
         except:
             self.still_calibrating = True
 
@@ -117,7 +117,7 @@ class calibrate_camera:
 
                 print self.pt
                 rospy.set_param('calibrate_camera',self.pt)
-                rosparam.dump_params(self.rospack.get_path('camera_setup') + '/parameters/previous_transform.yaml', 'calibrate_camera', verbose=False)
+                rosparam.dump_params(self.rospack.get_path('camera_setup') + '/config/previous_transform.yaml', 'calibrate_camera', verbose=False)
                 self.publish_feedback()
 
     def update_progress(self):
